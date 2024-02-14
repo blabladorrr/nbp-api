@@ -6,10 +6,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import pl.edu.pjwstk.nbpapi.model.Rate;
+import pl.edu.pjwstk.nbpapi.model.GoldRateResponse;
 import pl.edu.pjwstk.nbpapi.service.NbpApiService;
-
-import java.time.LocalDate;
 
 @RestController
 @RequestMapping("/api")
@@ -21,7 +19,7 @@ public class NbpApiController {
     }
 
     @GetMapping
-    public ResponseEntity<String> getRate(@RequestParam String startDate, @RequestParam String endDate) {
+    public ResponseEntity<GoldRateResponse> getRate(@RequestParam String startDate, @RequestParam String endDate) {
         return ResponseEntity.ok(nbpApiService.getNbpRate(startDate, endDate));
     }
 }

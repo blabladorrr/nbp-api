@@ -1,13 +1,15 @@
 package pl.edu.pjwstk.nbpapi.service;
 
-import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+import pl.edu.pjwstk.nbpapi.model.Gold;
+import pl.edu.pjwstk.nbpapi.model.GoldRateAPIObject;
+import pl.edu.pjwstk.nbpapi.model.GoldRateResponse;
 import pl.edu.pjwstk.nbpapi.model.Rate;
 import pl.edu.pjwstk.nbpapi.repository.NbpApiRepository;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Service
 public class NbpApiService {
@@ -20,14 +22,35 @@ public class NbpApiService {
         this.restTemplate = restTemplate;
     }
 
-    public String getNbpRate(String startDate, String endDate) {
-        LocalDate startDateConv = LocalDate.parse(startDate);
-        System.out.println(startDateConv);
-        LocalDate endDateConv = LocalDate.parse(endDate);
-        System.out.println(endDateConv);
-        String uri = "http://api.nbp.pl/api/cenyzlota/" + startDateConv + "/" + endDateConv;
-        String nbpApiRate = restTemplate.getForObject(uri, String.class, startDate, endDate);
-        System.out.println(nbpApiRate);
-        return nbpApiRate;
+    public GoldRateResponse getNbpRate(String startDate, String endDate) {
+        LocalDate startDateConversed = LocalDate.parse(startDate);
+        LocalDate endDateConversed = LocalDate.parse(endDate);
+        String uri = "http://api.nbp.pl/api/cenyzlota/" + startDateConversed + "/" + endDateConversed;
+        GoldRateAPIObject[] responseBody = restTemplate.getForObject(uri, GoldRateAPIObject[].class);
+        double averageGoldRate = this.getAverageGoldRate(responseBody);
+        GoldRateResponse goldRateResponse = this.saveAverageGoldValue(startDateConversed, endDateConversed, averageGoldRate);
+        return goldRateResponse;
+    }
+
+    private Double getAverageGoldRate(GoldRateAPIObject[] responseBody) {
+        Double goldValueSum = 0d;
+        for (GoldRateAPIObject goldRate : responseBody) {
+            goldValueSum += goldRate.getCena();
+        }
+        return goldValueSum / responseBody.length;
+    }
+
+    private GoldRateResponse saveAverageGoldValue(LocalDate startDate, LocalDate endDate, Double averageGoldRate) {
+        Rate rate = new Rate();
+        rate.setRate(averageGoldRate);
+        rate.setStartDate(startDate);
+        rate.setEndDate(endDate);
+        rate.setQueryTime(LocalDateTime.now());
+        rate.setGold(Gold.GOLD);
+
+        nbpApiRepository.save(rate);
+
+        GoldRateResponse goldRateResponse = new GoldRateResponse(averageGoldRate, startDate, endDate);
+        return goldRateResponse;
     }
 }
